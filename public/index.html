@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VAL Upload — Galeria com Vercel Blob</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+
+  <!-- Bootstrap + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+
+  <meta name="color-scheme" content="dark light">
+
+  <style>
+    :root{
+      --val-bg:#0f1923;       /* Navy escuro */
+      --val-panel:#111a23;
+      --val-ink:#ece8e1;      /* Off-white Valorant */
+      --val-red:#ff4655;      /* Vermelho Valorant */
+      --val-red-2:#ff6a75;
+      --val-cyan:#00e5ff;
+      --val-ink-dim:#c9c6bf;
+      --val-outline:#1f2b36;
+      --val-success:#2dd4bf;
+      --radius:18px;
+    }
+
+    html,body{height:100%;}
+    body{
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      background:
+        radial-gradient(1200px 1200px at 120% -10%, rgba(255,70,85,.18), transparent 40%),
+        radial-gradient(900px 900px at -20% 110%, rgba(0,229,255,.15), transparent 40%),
+        linear-gradient(180deg, #0c141b 0%, var(--val-bg) 60%, #0e1822 100%);
+      color: var(--val-ink);
+    }
+
+    /* Navbar */
+    .brand{
+      font-family: Rajdhani, Inter, system-ui, sans-serif;
+      letter-spacing:.06em;
+      font-weight:700;
+      text-transform: uppercase;
+      color: var(--val-ink);
+    }
+    .brand .accent{color: var(--val-red);}
+
+    .nav-blur{
+      backdrop-filter: blur(8px);
+      background: rgba(15,25,35,.55);
+      border-bottom:1px solid var(--val-outline);
+    }
+
+    /* Upload Card */
+    .panel{
+      background: linear-gradient(180deg, var(--val-panel), #0c141b);
+      border:1px solid var(--val-outline);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 35px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.02);
+      position: relative;
+      overflow: hidden;
+    }
+    .panel::after{
+      content:"";
+      position: absolute;
+      inset:-2px;
+      background:
+        linear-gradient(120deg, transparent 0 30%, rgba(255,70,85,.08) 40%, transparent 60%),
+        radial-gradient(600px 120px at 10% -10%, rgba(0,229,255,.12), transparent 60%);
+      pointer-events:none;
+      filter: blur(10px);
+    }
+
+    .dropzone{
+      border:2px dashed rgba(255,255,255,.12);
+      border-radius: calc(var(--radius) - 8px);
+      padding: 2rem;
+      transition: border-color .2s, background .2s, transform .2s;
+      min-height: 160px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      background: rgba(255,255,255,.02);
+    }
+    .dropzone.dragover{
+      border-color: var(--val-red);
+      background: rgba(255,70,85,.07);
+      transform: translateY(-2px);
+    }
+    .dz-icon{
+      font-size: 2.2rem;
+      color: var(--val-red);
+    }
+    .hint{color:var(--val-ink-dim); font-size:.95rem;}
+
+    /* Buttons */
+    .btn-val{
+      --bs-btn-padding-y:.65rem;
+      --bs-btn-padding-x:1rem;
+      --bs-btn-border-radius:12px;
+      background: linear-gradient(90deg, var(--val-red), var(--val-red-2));
+      border: none;
+      color: white;
+      font-weight: 700;
+      letter-spacing:.02em;
+      text-transform: uppercase;
+      box-shadow: 0 6px 20px rgba(255,70,85,.25);
+    }
+    .btn-val:hover{filter: brightness(1.05);}
+    .btn-ghost{
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.1);
+      color: var(--val-ink);
+      border-radius:12px;
+    }
+    .btn-ghost:hover{background: rgba(255,255,255,.1);}
+
+    /* Gallery */
+    .grid{
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 1rem;
+    }
+    @media (min-width:576px){ .grid{ grid-template-columns: repeat(2, 1fr);} }
+    @media (min-width:992px){ .grid{ grid-template-columns: repeat(3, 1fr);} }
+    @media (min-width:1200px){ .grid{ grid-template-columns: repeat(4, 1fr);} }
+
+    .card-val{
+      background: linear-gradient(180deg, #0f1720, #111a23);
+      border:1px solid var(--val-outline);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform .15s ease-out, box-shadow .2s ease-out;
+    }
+    .card-val:hover{
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.4);
+    }
+    .thumb{
+      width:100%;
+      height: 220px;
+      object-fit: cover;
+      display:block;
+    }
+    .meta{
+      padding:.75rem .85rem;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap:.5rem;
+    }
+    .name{
+      font-size:.95rem;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      color:var(--val-ink);
+    }
+    .actions{
+      display:flex; gap:.4rem;
+    }
+    .badge-ext{
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.1);
+      padding:.18rem .5rem;
+      border-radius:10px;
+      font-size:.75rem;
+      color:var(--val-ink-dim);
+    }
+
+    /* Skeletons */
+    .skeleton{
+      background: linear-gradient(100deg, rgba(255,255,255,.06) 40%, rgba(255,255,255,.12) 50%, rgba(255,255,255,.06) 60%) no-repeat;
+      background-size: 200% 100%;
+      animation: shimmer 1s infinite;
+      border-radius: 12px;
+    }
+    @keyframes shimmer{
+      0%{ background-position: 200% 0; }
+      100%{ background-position: -200% 0; }
+    }
+
+    /* Modal tweak */
+    .modal-content{
+      background: #0b131b;
+      border:1px solid var(--val-outline);
+      border-radius: 16px;
+    }
+    .modal-header{
+      border-bottom:1px solid var(--val-outline);
+    }
+    .modal-footer{
+      border-top:1px solid var(--val-outline);
+    }
+
+    /* Toasts */
+    .toast-container{
+      z-index: 1060;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav class="navbar nav-blur sticky-top">
+    <div class="container d-flex align-items-center justify-content-between">
+      <span class="brand d-flex align-items-center gap-2">
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="currentColor" d="M21.6 3.2v13.5l-2.9 3.1-7.5-9.9V3.2h10.4zm-19.2 0v13.6l6.9 3.9 1.1-1.6L2.4 3.2z"></path>
+        </svg>
+        VAL<span class="accent">UPLOAD</span>
+      </span>
+      <a class="btn btn-ghost btn-sm" href="#" onclick="loadGallery(true)" title="Recarregar galeria">
+        <i class="fa-solid fa-rotate-right"></i>
+      </a>
+    </div>
+  </nav>
+
+  <main class="container my-4 my-lg-5">
+    <!-- Upload -->
+    <section class="panel p-3 p-md-4 mb-4">
+      <div class="row g-3 align-items-center">
+        <div class="col-12 col-lg-7">
+          <h1 class="h3 mb-2" style="font-family:Rajdhani,Inter,sans-serif;letter-spacing:.03em">
+            <span class="accent" style="color:var(--val-red)">Upload</span> & Galeria — Vercel Blob
+          </h1>
+          <p class="mb-3 text-secondary">Arraste sua imagem, visualize e envie. Depois gerencie na galeria: abrir, copiar link ou <b>excluir</b>.</p>
+
+          <form id="uploadForm" class="d-grid gap-3">
+            <div id="dropzone" class="dropzone">
+              <div>
+                <div class="dz-icon mb-2"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i></div>
+                <div class="hint">Arraste e solte aqui, ou</div>
+                <label class="mt-2 btn btn-val">
+                  <input id="fileInput" name="file" type="file" accept="image/*" hidden />
+                  Escolher arquivo
+                </label>
+              </div>
+            </div>
+
+            <div id="previewWrap" class="d-none">
+              <div class="d-flex align-items-center justify-content-between">
+                <small class="text-secondary">Pré-visualização</small>
+                <button type="button" class="btn btn-ghost btn-sm" id="clearPreview"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <img id="preview" class="w-100 rounded-3" alt="Pré-visualização" style="max-height:280px;object-fit:contain;background:#0b131a;padding:.5rem;border:1px solid var(--val-outline);" />
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-val">
+                <i class="fa-solid fa-upload me-2"></i> Enviar
+              </button>
+              <div id="status" class="align-self-center small text-secondary" role="status" aria-live="polite"></div>
+            </div>
+          </form>
+        </div>
+
+        <div class="col-12 col-lg-5">
+          <div class="p-3 p-md-4 rounded-4" style="border:1px dashed var(--val-outline); background: rgba(255,255,255,.03);">
+            <ul class="mb-0 small text-secondary">
+              <li>Formatos: imagens (<code>image/*</code>).</li>
+              <li>Tamanho depende da sua configuração no back-end.</li>
+              <li>Rotas esperadas:
+                <code>/api/upload</code>,
+                <code>/api/files</code>,
+                <code>/api/delete</code>.
+              </li>
+              <li>O botão <b>Excluir</b> remove do Blob pelo <code>pathname</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gallery -->
+    <section>
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="h4 m-0" style="font-family:Rajdhani,Inter,sans-serif;">🎨 Galeria</h2>
+        <div class="d-flex gap-2">
+          <button class="btn btn-ghost btn-sm" onclick="loadGallery(true)">
+            <i class="fa-solid fa-arrows-rotate me-1"></i> Atualizar
+          </button>
+        </div>
+      </div>
+
+      <div id="gallery" class="grid" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <!-- Lightbox Modal -->
+  <div class="modal fade" id="lightboxModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="lightboxTitle" class="modal-title">Visualização</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <img id="lightboxImage" class="img-fluid w-100 rounded" alt="Imagem ampliada" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="copyInModal" class="btn btn-ghost">
+            <i class="fa-regular fa-copy me-2"></i> Copiar URL
+          </button>
+          <button type="button" class="btn btn-val" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts"></div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // ====== Config ======
+    const FILES_ENDPOINT = '/api/files';
+    const UPLOAD_ENDPOINT = '/api/upload';
+    const DELETE_ENDPOINT = '/api/delete';
+
+    // ====== Elements ======
+    const form = document.getElementById('uploadForm');
+    const fileInput = document.getElementById('fileInput');
+    const statusEl = document.getElementById('status');
+    const galleryEl = document.getElementById('gallery');
+    const preview = document.getElementById('preview');
+    const previewWrap = document.getElementById('previewWrap');
+    const dropzone = document.getElementById('dropzone');
+    const clearPreviewBtn = document.getElementById('clearPreview');
+    const lightboxImage = document.getElementById('lightboxImage');
+    const lightboxTitle = document.getElementById('lightboxTitle');
+    const copyInModal = document.getElementById('copyInModal');
+
+    // ====== Utils ======
+    const toastContainer = document.getElementById('toasts');
+    function showToast(message, type='info', delay=3000){
+      const id = 't'+crypto.randomUUID();
+      const icon = type==='success' ? 'fa-circle-check' :
+                   type==='danger'  ? 'fa-triangle-exclamation' :
+                   type==='warning' ? 'fa-circle-exclamation' : 'fa-circle-info';
+      const bg = type==='success' ? 'bg-success' :
+                 type==='danger'  ? 'bg-danger' :
+                 type==='warning' ? 'bg-warning text-dark' : 'bg-primary';
+      const el = document.createElement('div');
+      el.className = `toast align-items-center text-white ${bg} border-0`;
+      el.id = id;
+      el.role = 'status';
+      el.setAttribute('aria-live','polite');
+      el.setAttribute('aria-atomic','true');
+      el.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body d-flex align-items-center gap-2">
+            <i class="fa-solid ${icon}"></i>
+            <span>${message}</span>
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
+        </div>`;
+      toastContainer.appendChild(el);
+      const t = new bootstrap.Toast(el, {delay});
+      t.show();
+      el.addEventListener('hidden.bs.toast', ()=> el.remove());
+    }
+
+    async function apiFetch(url, opts={}){
+      const res = await fetch(url, opts);
+      let data;
+      try { data = await res.json(); } catch { data = null; }
+      if(!res.ok){
+        const msg = (data && (data.error || data.message)) || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    function fileNameFromPath(path){
+      try{
+        const parts = path.split('/');
+        return parts[parts.length-1] || path;
+      }catch{ return path; }
+    }
+
+    function extFromName(name){
+      const i = name.lastIndexOf('.');
+      return i>0 ? name.slice(i+1).toLowerCase() : '';
+    }
+
+    // ====== Dropzone ======
+    ;['dragenter','dragover'].forEach(evt=>{
+      dropzone.addEventListener(evt, e=>{
+        e.preventDefault(); e.stopPropagation();
+        dropzone.classList.add('dragover');
+      });
+    });
+    ;['dragleave','drop'].forEach(evt=>{
+      dropzone.addEventListener(evt, e=>{
+        e.preventDefault(); e.stopPropagation();
+        dropzone.classList.remove('dragover');
+      });
+    });
+    dropzone.addEventListener('drop', e=>{
+      const f = e.dataTransfer.files?.[0];
+      if(f){ setPreview(f); }
+    });
+
+    function setPreview(file){
+      if(file && file.type.startsWith('image/')){
+        const reader = new FileReader();
+        reader.onload = ev=>{
+          preview.src = ev.target.result;
+          previewWrap.classList.remove('d-none');
+        };
+        reader.readAsDataURL(file);
+        fileInput.files = new DataTransfer().files; // reset
+        // Create a DataTransfer to set programmatically
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        fileInput.files = dt.files;
+      }else{
+        previewWrap.classList.add('d-none');
+        preview.removeAttribute('src');
+      }
+    }
+
+    fileInput.addEventListener('change', ()=>{
+      const f = fileInput.files?.[0];
+      if(f) setPreview(f);
+    });
+    clearPreviewBtn.addEventListener('click', ()=>{
+      previewWrap.classList.add('d-none');
+      preview.removeAttribute('src');
+      fileInput.value = '';
+    });
+
+    // ====== Upload ======
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const file = fileInput.files?.[0];
+      if(!file){ showToast('Selecione uma imagem para enviar.','warning'); return; }
+
+      statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Enviando...';
+      statusEl.className = 'small text-primary';
+
+      try{
+        const res = await fetch(UPLOAD_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'x-vercel-filename': file.name,
+            'Content-Type': file.type
+          },
+          body: file
+        });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data?.message || 'Falha no upload');
+
+        showToast('Upload concluído!','success');
+        statusEl.textContent = 'Upload finalizado';
+        statusEl.className = 'small text-success';
+
+        // Reset preview e form
+        fileInput.value = '';
+        previewWrap.classList.add('d-none');
+        preview.removeAttribute('src');
+
+        // Recarrega galeria
+        loadGallery(true);
+      }catch(err){
+        console.error(err);
+        showToast('Erro no upload: '+err.message, 'danger', 5000);
+        statusEl.textContent = 'Erro: '+err.message;
+        statusEl.className = 'small text-danger';
+      }
+    });
+
+    // ====== Gallery ======
+    function gallerySkeleton(count=8){
+      galleryEl.innerHTML = '';
+      for(let i=0;i<count;i++){
+        const card = document.createElement('div');
+        card.className = 'card-val';
+        card.innerHTML = `
+          <div class="skeleton" style="height:220px;"></div>
+          <div class="meta">
+            <div class="skeleton" style="height:18px; width:60%;"></div>
+            <div class="skeleton" style="height:18px; width:20%;"></div>
+          </div>
+        `;
+        galleryEl.appendChild(card);
+      }
+    }
+
+    async function loadGallery(force=false){
+      if(!force && galleryEl.dataset.loaded === '1') return;
+      gallerySkeleton();
+
+      try{
+        const files = await apiFetch(FILES_ENDPOINT);
+        galleryEl.innerHTML = '';
+
+        if(!Array.isArray(files) || files.length===0){
+          galleryEl.innerHTML = `
+            <div class="text-center text-secondary p-5 panel">
+              <i class="fa-regular fa-image d-block mb-2" style="font-size:2rem;color:var(--val-red);"></i>
+              Nenhuma imagem encontrada.
+            </div>`;
+          galleryEl.dataset.loaded = '1';
+          return;
+        }
+
+        for(const f of files){
+          const name = fileNameFromPath(f.pathname || f.url || 'arquivo');
+          const cleanName = name.replace(/\.[^/.]+$/, '');
+          const extension = extFromName(name);
+          const card = document.createElement('div');
+          card.className = 'card-val';
+
+          card.innerHTML = `
+            <img src="${f.url}" alt="${cleanName}" class="thumb" loading="lazy">
+            <div class="meta">
+              <div class="d-flex align-items-center gap-2 flex-grow-1">
+                <span class="name" title="${cleanName}">${cleanName}</span>
+                <span class="badge-ext">${extension || 'img'}</span>
+              </div>
+              <div class="actions">
+                <button class="btn btn-ghost btn-sm" title="Abrir" data-action="open">
+                  <i class="fa-solid fa-up-right-from-square"></i>
+                </button>
+                <button class="btn btn-ghost btn-sm" title="Copiar URL" data-action="copy">
+                  <i class="fa-regular fa-copy"></i>
+                </button>
+                <button class="btn btn-ghost btn-sm text-danger" title="Excluir" data-action="delete">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          `;
+
+          // Bind actions
+          const img = card.querySelector('.thumb');
+          img.addEventListener('click', ()=>{
+            lightboxImage.src = f.url;
+            lightboxTitle.textContent = cleanName;
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('lightboxModal'));
+            modal.show();
+            copyInModal.onclick = ()=> copyToClipboard(f.url);
+          });
+
+          card.querySelector('[data-action="open"]').addEventListener('click', ()=>{
+            window.open(f.url, '_blank', 'noopener');
+          });
+          card.querySelector('[data-action="copy"]').addEventListener('click', ()=>{
+            copyToClipboard(f.url);
+          });
+          card.querySelector('[data-action="delete"]').addEventListener('click', async ()=>{
+            await handleDelete(f);
+          });
+
+          galleryEl.appendChild(card);
+        }
+
+        galleryEl.dataset.loaded = '1';
+      }catch(err){
+        console.error(err);
+        galleryEl.innerHTML = `
+          <div class="text-center text-danger p-5 panel">
+            <i class="fa-solid fa-triangle-exclamation d-block mb-2"></i>
+            Erro ao carregar: ${err.message}
+          </div>`;
+      }
+    }
+
+    async function copyToClipboard(text){
+      try{
+        await navigator.clipboard.writeText(text);
+        showToast('Link copiado!', 'success');
+      }catch{
+        showToast('Não foi possível copiar.', 'danger');
+      }
+    }
+
+    async function handleDelete(file){
+      const name = fileNameFromPath(file.pathname || file.url);
+      if(!confirm(`Excluir "${name}" do armazenamento?`)) return;
+
+      try{
+        // Envia pathname e url para o back-end decidir
+        await apiFetch(DELETE_ENDPOINT, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ pathname: file.pathname, url: file.url })
+        });
+        showToast('Imagem excluída.','success');
+        // Atualiza galeria
+        loadGallery(true);
+      }catch(err){
+        console.error(err);
+        showToast('Erro ao excluir: '+err.message, 'danger', 5000);
+      }
+    }
+
+    // ====== Init ======
+    document.addEventListener('DOMContentLoaded', ()=> {
+      loadGallery(true);
+    });
+  </script>
+</body>
+</html>
