@@ -1,23 +1,27 @@
 {
-    "version": 2,
-    "functions": {
-      "/**/*.js": {
-        "runtime": "@vercel/node@3.0.0"
-      }
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
     },
-  
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
+    }
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/server.js"
+      "dest": "server.js"
     },
     {
-      "src": "/(.*\\.(ico|css|js|png|jpg|jpeg|gif|svg|html))$",
+      "src": "/(.*\\.(ico|css|js|png|jpg|jpeg|gif|svg))$",
       "dest": "/public/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/public/index.html"
+      "dest": "server.js"
     }
   ]
 }
